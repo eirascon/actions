@@ -1,0 +1,37 @@
+name: 'YAML Lint'
+description: 'Lint some yaml file in an specified location'
+
+inputs:
+  config:
+    required: false
+    type: string
+    default: "relaxed"
+  format:
+    required: false
+    type: string
+    default: "colored"
+  location:
+    required: false
+    type: string
+    default: "."
+  outputfile:
+    required: false
+    type: string
+    default: "./lint.txt"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Run Lint
+      shell: sh
+      run: |
+        echo "yamllint (https://hub.docker.com/r/cytopia/yamllint)"
+        yamllint -d ${{ inputs.config }} -f ${{ inputs.format }} ${{ inputs.location }} | tee ${{ inputs.outputfile }}
+    - name: Register Linter Evidence
+      uses: actions/upload-artifact@v2
+      if: ${{ always() }}
+      with:
+        name: yamllint-evidence
+        path: ${{ inputs.outputfile }}
