@@ -1,0 +1,28 @@
+name: 'Slack Notify'
+description: 'Notify GitHub Workflow Status in a Slack Channel'
+
+inputs:
+  name:
+    required: true
+    type: string
+  url:
+    required: true
+    type: string
+  status:
+    required: true
+    type: string
+  webhook:
+    required: true
+    type: string
+
+runs:
+  using: composite
+  steps:
+    - name: Notify Status Over Slack
+      shell: sh
+      run: |
+        curl \
+        -X POST \
+        -H 'Content-type: application/json' \
+        --data '{"text": "Github Workflow '"${{ inputs.name }}"' - '"${{ inputs.status }}"' - '"${{ inputs.url }}"'"}' \
+        ${{ inputs.webhook }}
