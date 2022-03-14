@@ -4,20 +4,16 @@ description: 'Lint some yaml file in an specified location'
 inputs:
   config:
     required: false
-    type: string
-    default: "relaxed"
+    default: relaxed
   format:
     required: false
-    type: string
-    default: "colored"
+    default: colored
   location:
     required: false
-    type: string
-    default: "."
+    default: .
   outputfile:
     required: false
-    type: string
-    default: "./lint.txt"
+    default: ./lint.txt
 
 runs:
   using: composite
@@ -28,7 +24,11 @@ runs:
       shell: sh
       run: |
         echo "yamllint (https://hub.docker.com/r/cytopia/yamllint)"
-        yamllint -d ${{ inputs.config }} -f ${{ inputs.format }} ${{ inputs.location }} | tee ${{ inputs.outputfile }}
+        yamllint \
+        -d ${{ inputs.config }} \
+        -f ${{ inputs.format }} \
+        ${{ inputs.location }} | \
+        tee ${{ inputs.outputfile }}
     - name: Register Linter Evidence
       uses: actions/upload-artifact@v2
       if: ${{ always() }}

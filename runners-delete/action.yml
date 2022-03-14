@@ -1,0 +1,26 @@
+name: GitHub Actions runner
+description: Provision GitHub Actions runner
+
+inputs:
+  artifact-name:
+    required: false
+    default: deployment-file
+  deploy-file:
+    required: false
+    default: deploy.yml
+  kubeconfig:
+    required: false
+    default: /root/.kube/config
+
+runs:
+  using: composite
+  steps:
+  - uses: actions/download-artifact@v3
+    with:
+      name: ${{ inputs.artifact-name }}
+  - name: Delete runners in actions controller
+    shell: sh
+    run: |
+      kubectl delete \
+      --kubeconfig ${{ inputs.kubeconfig }} \
+      -f ${{ inputs.deploy-file }}

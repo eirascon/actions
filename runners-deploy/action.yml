@@ -1,0 +1,76 @@
+name: GitHub Actions runner
+description: Provision GitHub Actions runner
+
+inputs:
+  artifact-name:
+    required: false
+    default: deployment-file
+  deploy-id:
+    required: true
+  deploy-file:
+    required: false
+    default: deploy.yml
+  repository:
+    required: true
+  replicas:
+    required: false
+    default: 1
+  kubeconfig:
+    required: false
+    default: /root/.kube/config
+
+runs:
+  using: composite
+  steps:
+  - name: Create deployment File
+    shell: sh
+    run: |
+      cat > ${{ inputs.deploy-file }} <<EOF
+      apiVersion: actions.summerwind.dev/v1alpha1
+      kind: RunnerDeployment
+      metadata:
+        name: ${{ inputs.deploy-id }}
+      spec:
+        replicas: ${{ inputs.replicas }}
+        template:
+          spec:
+            repository: ${{ inputs.repository }}
+            labels: [ ${{ inputs.deploy-id }} ]
+            dockerEnv:
+            - name: HTTP_PROXY
+              value: ${HTTP_PROXY}
+            - name: HTTPS_PROXY
+              value: ${HTTPS_PROXY}
+            - name: NO_PROXY
+              value: ${NO_PROXY}
+            - name: http_proxy
+              value: ${http_proxy}
+            - name: https_proxy
+              value: ${https_proxy}
+            - name: no_proxy
+              value: ${no_proxy}
+            env:
+            - name: HTTP_PROXY
+              value: ${HTTP_PROXY}
+            - name: HTTPS_PROXY
+              value: ${HTTPS_PROXY}
+            - name: NO_PROXY
+              value: ${NO_PROXY}
+            - name: http_proxy
+              value: ${http_proxy}
+            - name: https_proxy
+              value: ${https_proxy}
+            - name: no_proxy
+              value: ${no_proxy}
+      EOF
+  - name: Deploy runners in actions controller
+    shell: sh
+    run: |
+      kubectl apply \
+      --kubeconfig ${{ inputs.kubeconfig }} \
+      -f ${{ inputs.deploy-file }}
+  - name: Register Deploy file As artifact for later usage
+    uses: actions/upload-artifact@v2
+    with:
+      name: ${{ inputs.artifact-name }}
+      path: ${{ inputs.deploy-file }}
