@@ -5,11 +5,14 @@ inputs:
   target:
     required: false
     default: '*.yaml'
+  location:
+    reuired: false
+    default: '.'
   region:
     required: false
     default: us-east-1
   profile:
-    required: false  
+    required: false
     default: default
   outputfile:
     required: false
@@ -25,24 +28,25 @@ runs:
       env:
         AWS_REGION: ${{ inputs.region }}
         AWS_PROFILE: ${{ inputs.profile }}
+      working-directory: ${{ inputs.location }}
       run: |
         for TARGET in $(ls ${{ inputs.target }}); do
           echo $TARGET
           aws cloudformation validate-template \
-          --template-body file://$TARGET 2>&1 \
+          --template-body file://$(pwd)/$TARGET 2>&1 \
           | tee -a ${{ inputs.outputfile }} || true
         done
         ERROR=$(grep error ${{ inputs.outputfile }})
         if [ $(echo $ERROR | wc -l) -gt 0 ]; then
           echo "Validation failed"
           echo "$ERROR"
-          exit 1
         else
           echo "Validation passed."
         fi
     - name: Register Validator Evidence
       uses: actions/upload-artifact@v2
       if: ${{ always() }}
+      working-directory: ${{ inputs.location }}
       with:
         name: aws-cfn-validate-evidence
         path: ${{ inputs.outputfile }}
