@@ -2,7 +2,7 @@ name: Slack Notify
 description: Notify GitHub Workflow Status in a Slack Channel
 
 inputs:
-  token:
+  status:
     required: true
   webhook:
     required: true
@@ -10,13 +10,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Get Workflow Status
-      uses: unitecicd/workflow-status@main
-      id: check
-      with:
-        token: ${{ input.token }}
-    - name: Notify Status by Slack
-      uses: rtCamp/action-slack-notify@v2
-      env:
-       SLACK_COLOR: ${{ steps.check.outputs.status }}
-       SLACK_WEBHOOK: ${{ inputs.webhook }}
+  - name: Notify Status by Slack
+    uses: rtCamp/action-slack-notify@v2
+    env:
+     SLACK_COLOR: ${{ inputs.status }}
+     SLACK_WEBHOOK: ${{ inputs.webhook }}

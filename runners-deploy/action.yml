@@ -5,8 +5,6 @@ inputs:
   artifact-name:
     required: false
     default: deployment-file
-  deploy-id:
-    required: true
   deploy-file:
     required: false
     default: deploy.yml
@@ -19,9 +17,18 @@ inputs:
     required: false
     default: /root/.kube/config
 
+outputs:
+  uuid:
+    description: uiud used as identifier for runner
+    value: ${{ steps.uuid.outputs.value }}
+
 runs:
   using: composite
   steps:
+  - name: Generate Actions Runners Deploy ID
+    id: uuid
+    shell: sh
+    run: echo "::set-output name=value::$(uuid)"
   - name: Create deployment File
     shell: sh
     run: |
@@ -29,13 +36,13 @@ runs:
       apiVersion: actions.summerwind.dev/v1alpha1
       kind: RunnerDeployment
       metadata:
-        name: ${{ inputs.deploy-id }}
+        name: ${{ steps.uuid.outputs.value }}
       spec:
         replicas: ${{ inputs.replicas }}
         template:
           spec:
             repository: ${{ inputs.repository }}
-            labels: [ ${{ inputs.deploy-id }} ]
+            labels: [ ${{ steps.uuid.outputs.value }} ]
             dockerEnv:
             - name: HTTP_PROXY
               value: ${HTTP_PROXY}

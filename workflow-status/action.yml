@@ -1,0 +1,47 @@
+name: Workflow Status Action
+description: Get Workflow status on private repos
+
+inputs:
+  token:
+    required: true
+  break:
+    required: false
+    type: boolean
+    default: true
+
+outputs:
+  status:
+    description: Returns either success or failed as workflow status
+    value: ${{ steps.workflow-status.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+  - id: workflow-status
+    shell: bash
+    run: |
+      url="${GITHUB_API_URL}/repos"
+      repo="${GITHUB_REPOSITORY}"
+      run_id="${GITHUB_RUN_ID}"
+
+      failure=$(curl -H "Authorization: token ${{ inputs.token }}" -s "${url}/${repo}/actions/runs/${run_id}/jobs" | \
+      jq -r '.jobs[] | select(.status == "completed" and .conclusion == "failure").conclusion' | \
+      wc -l)
+
+      cancelled=$(curl -H "Authorization: token ${{ inputs.token }}" -s "${url}/${repo}/actions/runs/${run_id}/jobs" | \
+      jq -r '.jobs[] | select(.status == "completed" and .conclusion == "cancelled").conclusion' | \
+      wc -l)
+
+      if [ "${failure}" -gt 0 ]; then
+        status="failure"
+      elif [ "${cancelled}" -gt 0 ]; then
+        status="cancelled"
+      else
+        status="success"
+      fi
+
+      echo "::set-output name=status::${status}"
+  - name: Break pipeline if status is failure
+    if: ${{ inputs.break }}
+    shell: sh
+    run: if [ "${{ steps.workflow-status.outputs.status }}" != "success" ]; then exit 1; fi
