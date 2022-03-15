@@ -14,39 +14,35 @@ inputs:
   profile:
     required: false
     default: default
-  outputfile:
+  credentials:
     required: false
-    default: ./validation.txt
+    default: /root/.aws/credentials
+  outputdir:
+    required: false
+    default: validations
 
 runs:
   using: composite
   steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Run Lint
-      shell: sh
+    - name: Run Validation
+      shell: bash
       env:
         AWS_REGION: ${{ inputs.region }}
         AWS_PROFILE: ${{ inputs.profile }}
+        AWS_SHARED_CREDENTIALS_FILE: ${{ inputs.credentials }}
       working-directory: ${{ inputs.location }}
       run: |
+        mkdir ${{ inputs.outputdir }}
         for TARGET in $(ls ${{ inputs.target }}); do
-          echo $TARGET
           aws cloudformation validate-template \
-          --template-body file://$(pwd)/$TARGET 2>&1 \
-          | tee -a ${{ inputs.outputfile }} || true
+          --template-body file://$(pwd)/$TARGET | \
+          tee ${{ inputs.outputdir }}/${TARGET%.*}.json
         done
-        ERROR=$(grep error ${{ inputs.outputfile }})
-        if [ $(echo $ERROR | wc -l) -gt 0 ]; then
-          echo "Validation failed"
-          echo "$ERROR"
-        else
-          echo "Validation passed."
-        fi
     - name: Register Validator Evidence
       uses: actions/upload-artifact@v2
       if: ${{ always() }}
-      working-directory: ${{ inputs.location }}
       with:
         name: aws-cfn-validate-evidence
-        path: ${{ inputs.outputfile }}
+        path: ${{ inputs.location }}/${{ inputs.outputdir }}/

@@ -10,12 +10,9 @@ inputs:
     default: deploy.yml
   repository:
     required: true
-  minReplicas:
+  replicas:
     required: false
     default: 1
-  maxReplicas:
-    required: false
-    default: 5
   kubeconfig:
     required: false
     default: /root/.kube/config
@@ -41,7 +38,6 @@ runs:
       metadata:
         name: ${{ steps.uuid.outputs.value }}
       spec:
-        replicas: ${{ inputs.replicas }}
         template:
           spec:
             repository: ${{ inputs.repository }}
@@ -80,8 +76,8 @@ runs:
       spec:
         scaleTargetRef:
           name: ${{ steps.uuid.outputs.value }}
-        minReplicas: ${{ inputs.minReplicas }}
-        maxReplicas: ${{ inputs.maxReplicas }}
+        minReplicas: ${{ inputs.replicas }}
+        maxReplicas: ${{ inputs.replicas }}
         metrics: []
       EOF
   - name: Deploy runners in actions controller
