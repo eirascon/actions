@@ -1,0 +1,31 @@
+name: 'CFN Lint'
+description: 'Lint some cloudformation yaml files in an specified location'
+
+inputs:
+  ignored-flags:
+    required: false
+    default: 'W,I'
+  target:
+    required: false
+    default: './*.yaml'
+  outputfile:
+    required: false
+    default: ./lint.txt
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Run Lint
+      shell: sh
+      run: |
+        echo "cfn-lint (https://hub.docker.com/r/alpine/cfn-lint)"
+        { cfn-lint ${{ inputs.target }} -i ${{ inputs.ignored-flags }}; echo EXIT_CODE=$? ; } | \
+        tee ${{ inputs.outputfile }}
+    - name: Register Linter Evidence
+      uses: actions/upload-artifact@v2
+      if: ${{ always() }}
+      with:
+        name: cfn-lint-evidence
+        path: ${{ inputs.outputfile }}
