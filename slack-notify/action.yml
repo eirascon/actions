@@ -1,28 +1,22 @@
-name: 'Slack Notify'
-description: 'Notify GitHub Workflow Status in a Slack Channel'
+name: Slack Notify
+description: Notify GitHub Workflow Status in a Slack Channel
 
 inputs:
-  name:
+  token:
     required: true
-    type: string
-  url:
-    required: true
-    type: string
-  status:
-    required: true
-    type: string
   webhook:
     required: true
-    type: string
 
 runs:
   using: composite
   steps:
-    - name: Notify Status Over Slack
-      shell: sh
-      run: |
-        curl \
-        -X POST \
-        -H 'Content-type: application/json' \
-        --data '{"text": "Github Workflow '"${{ inputs.name }}"' - '"${{ inputs.status }}"' - '"${{ inputs.url }}"'"}' \
-        ${{ inputs.webhook }}
+    - name: Get Workflow Status
+      uses: unitecicd/workflow-status@main
+      id: check
+      with:
+        token: ${{ input.token }}
+    - name: Notify Status by Slack
+      uses: rtCamp/action-slack-notify@v2
+      env:
+       SLACK_COLOR: ${{ steps.check.outputs.status }}
+       SLACK_WEBHOOK: ${{ inputs.webhook }}

@@ -1,12 +1,18 @@
 name: Pull Request Check
 description: Checks if a pull request can be merged
 
+inputs:
+  token:
+    required: true
+
 runs:
   using: composite
   steps:
   - name: Get Workflow Status
-    uses: martialonline/workflow-status@v2
+    uses: unitecicd/workflow-status@main
     id: check
+    with:
+      token: ${{ input.token }}
   - name: Check if a pull request can be merged
     shell: sh
     run: if [ "${{ steps.check.outputs.status }}" != "success" ]; then exit 1; fi

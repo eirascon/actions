@@ -14,7 +14,7 @@ inputs:
     required: true
   replicas:
     required: false
-    default: 1
+    default: '1'
   kubeconfig:
     required: false
     default: /root/.kube/config
