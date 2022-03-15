@@ -1,0 +1,48 @@
+name: 'AWS CFN Validator'
+description: 'Validates some cloudformation yaml files in an specified location'
+
+inputs:
+  target:
+    required: false
+    default: '*.yaml'
+  region:
+    required: false
+    default: us-east-1
+  profile:
+    required: false  
+    default: default
+  outputfile:
+    required: false
+    default: ./validation.txt
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Run Lint
+      shell: sh
+      env:
+        AWS_REGION: ${{ inputs.region }}
+        AWS_PROFILE: ${{ inputs.profile }}
+      run: |
+        for TARGET in $(ls ${{ inputs.target }}); do
+          echo $TARGET
+          aws cloudformation validate-template \
+          --template-body file://$TARGET 2>&1 \
+          | tee -a ${{ inputs.outputfile }} || true
+        done
+        ERROR=$(grep error ${{ inputs.outputfile }})
+        if [ $(echo $ERROR | wc -l) -gt 0 ]; then
+          echo "Validation failed"
+          echo "$ERROR"
+          exit 1
+        else
+          echo "Validation passed."
+        fi
+    - name: Register Validator Evidence
+      uses: actions/upload-artifact@v2
+      if: ${{ always() }}
+      with:
+        name: aws-cfn-validate-evidence
+        path: ${{ inputs.outputfile }}
