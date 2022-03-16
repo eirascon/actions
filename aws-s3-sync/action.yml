@@ -1,0 +1,33 @@
+name: 'AWS S3 Sync'
+description: 'Sync a local directory with an AWS S3 Bucket'
+
+inputs:
+  bucket:
+    required: true
+  location:
+    required: false
+    default: '.'
+  region:
+    required: false
+    default: us-east-1
+  profile:
+    required: false
+    default: default
+  credentials:
+    required: false
+    default: /root/.aws/credentials
+
+runs:
+  using: composite
+  steps:
+  - name: Checkout
+    uses: actions/checkout@v2
+  - name: Sync Files to Bucket
+    shell: bash
+    env:
+      AWS_REGION: ${{ inputs.region }}
+      AWS_PROFILE: ${{ inputs.profile }}
+      AWS_SHARED_CREDENTIALS_FILE: ${{ inputs.credentials }}
+    working-directory: ${{ inputs.location }}
+    run: |
+      aws s3 sync . ${{ inputs.bucket }}
