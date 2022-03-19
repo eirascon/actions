@@ -23,6 +23,11 @@ runs:
         echo "cfn-lint (https://hub.docker.com/r/alpine/cfn-lint)"
         { cfn-lint ${{ inputs.target }} -i ${{ inputs.ignored-flags }}; echo EXIT_CODE=$? ; } | \
         tee ${{ inputs.outputfile }}
+        if [ $(wc -l ${{ inputs.outputfile }} | awk '{print $1}') -gt 0 ]
+        then
+          echo "Errors Found"
+          exit 1
+        fi
     - name: Register Linter Evidence
       uses: actions/upload-artifact@v2
       if: ${{ always() }}
