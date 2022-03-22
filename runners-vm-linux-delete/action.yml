@@ -1,0 +1,28 @@
+name: GitHub Actions Delete VM Linux Runner
+description: GitHub Action to Delete AWS Linux VM
+
+inputs:
+  stack-name:
+    required: false
+  region:
+    required: false
+    default: us-west-2
+  profile:
+    required: false
+    default: ec2-runners
+  credentials:
+    required: false
+    default: /root/.aws/credentials
+
+runs:
+  using: composite
+  steps:
+  - name: Delete Stack Deployment
+    shell: sh
+    env:
+      AWS_REGION: ${{ inputs.region }}
+      AWS_PROFILE: ${{ inputs.profile }}
+      AWS_SHARED_CREDENTIALS_FILE: ${{ inputs.credentials }}
+    run: |
+      aws cloudformation delete-stack \
+      --stack-name ${{ inputs.stack-name }}
