@@ -1,0 +1,85 @@
+name: GitHub Actions VM Linux Runner
+description: Provision GitHub Actions Runner on AWS Linux VM
+
+inputs:
+  location:
+    required: false
+    default: cloudformation/cicd
+  template:
+    required: false
+    default: GithubActionsRunnerAWSLinux.yaml
+  repository:
+    required: true
+  token:
+    required: true
+  image:
+    required: false
+    default: Ubuntu Latest With Intel Unite Deps
+  region:
+    required: false
+    default: us-west-2
+  profile:
+    required: false
+    default: ec2-runners
+  credentials:
+    required: false
+    default: /root/.aws/credentials
+  replicas:
+    required: false
+    default: 1
+
+outputs:
+  uuid:
+    description: uiud used as identifier for runner
+    value: ${{ steps.uuid.outputs.value }}
+  ami-id:
+    description: AWS AMI-ID from latest image generated to be used as runner
+    value: ${{ steps.ami-id.outputs.value }}
+  stack-name:
+    description: AWS Stack identifier
+    value: ${{ steps.stack-name.outputs.value }}
+
+runs:
+  using: composite
+  steps:
+  - name: Checkout CFN file repo
+    uses: actions/checkout@v2
+  - name: Generate Actions Runners Deploy ID
+    id: uuid
+    shell: sh
+    run: echo "::set-output name=value::$(uuid)"
+  - name: Register AWS Stack Name
+    id: stack-name
+    shell: sh
+    run: echo "::set-output name=value::unite-linux-runners-${{ steps.uuid.outputs.value }}"
+  - name: Get Latest AMI
+    shell: sh
+    id: ami-id
+    env:
+      AWS_REGION: ${{ inputs.region }}
+      AWS_PROFILE: ${{ inputs.profile }}
+      AWS_SHARED_CREDENTIALS_FILE: ${{ inputs.credentials }}
+    run: |
+      AMI_ID=$(aws ec2 describe-images \
+      --filters "Name=name,Values=${{ inputs.image }}*" \
+      --query 'sort_by(Images, &CreationDate)[-1].[ImageId]' \
+      --output 'text')
+      echo "::set-output name=value::$(echo $AMI_ID)"
+  - name: Create Stack Deployment for Runners
+    shell: sh
+    working-directory: ${{ inputs.location }}
+    env:
+      AWS_REGION: ${{ inputs.region }}
+      AWS_PROFILE: ${{ inputs.profile }}
+      AWS_SHARED_CREDENTIALS_FILE: ${{ inputs.credentials }}
+    run: |
+      aws cloudformation create-stack \
+      --stack-name ${{ steps.stack-name.outputs.value }} \
+      --template-body file://$(pwd)/${{ inputs.template }} \
+      --capabilities CAPABILITY_NAMED_IAM \
+      --parameters \
+      ParameterKey=Label,ParameterValue=${{ steps.uuid.outputs.value }} \
+      ParameterKey=Repository,ParameterValue=${{ inputs.repository }} \
+      ParameterKey=AMI,ParameterValue=${{ steps.ami-id.outputs.value }} \
+      ParameterKey=GitHubToken,ParameterValue=${{ inputs.token }} \
+      ParameterKey=Capacity,ParameterValue=${{ inputs.replicas }}
